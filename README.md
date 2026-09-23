@@ -1,5 +1,11 @@
 # Obsidian AI Inbox
 
+![Local capture UI using synthetic demo data](docs/inbox-demo.png)
+
+See [installation and search demo](docs/installation-demo.md) for an explicit
+demo-vault run. The screenshot is the repository's local interface, not a
+personal vault.
+
 给已有 Obsidian 库加一个本机收件窗口；不是重建知识库，不是另一个云端笔记库。
 
 ## 你只需要做什么
