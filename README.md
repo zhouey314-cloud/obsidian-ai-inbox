@@ -1,10 +1,25 @@
 # Obsidian AI Inbox
 
-![Local capture UI using synthetic demo data](docs/inbox-demo.png)
+A local-first capture and keyword-search inbox for an Obsidian vault you explicitly select, with an optional handoff prompt for Codex.
 
-See [installation and search demo](docs/installation-demo.md) for an explicit
-demo-vault run. The screenshot is the repository's local interface, not a
-personal vault.
+**LOCAL_RUNNABLE / OFFLINE_TOOL** · [Synthetic demo](docs/installation-demo.md) · [Verification](docs/verification.md) · [Interview notes](docs/interview-notes.md)
+
+[![CI](https://github.com/zhouey314-cloud/obsidian-ai-inbox/actions/workflows/ci.yml/badge.svg)](https://github.com/zhouey314-cloud/obsidian-ai-inbox/actions/workflows/ci.yml)
+
+![Local browser capture UI opened against the bundled synthetic demo vault](docs/inbox-demo.png)
+
+This is a browser capture of the locally running app against the repository's synthetic demo vault, not a personal vault or a cloud service.
+
+## Quick start with synthetic data
+
+Python 3.9+ and no API key are required:
+
+```bash
+python3 app.py --vault demo-vault --check
+python3 app.py --vault demo-vault
+```
+
+The first command validates the selected vault without writing; the second opens the local browser UI. In **找以前的资料**, search for `Synthetic` to find the two bundled example notes. For an existing vault, pass its path explicitly with `--vault`; use `python3 install_mac.py --vault /path/to/existing-vault` only after reviewing its install action. [Installation and search steps](docs/installation-demo.md) describe the demo.
 
 给已有 Obsidian 库加一个本机收件窗口；不是重建知识库，不是另一个云端笔记库。
 
@@ -44,6 +59,16 @@ X 帖子、群聊：复制选中的相关正文，尽量附来源。程序不登
 
 程序本体放库外的用户 Application Support；桌面只有启动应用。不会修改旧正文、`.obsidian`、Skill 或 Git。
 
+## How it works / code map
+
+Selected vault path → loopback server with a per-run token → capture into known vault folders or search readable Markdown → human review. The tool can copy an instruction for Codex about one saved item; it does not call a model itself.
+
+- `app.py`: vault boundary, capture/search logic and loopback HTTP server.
+- `index.html`: local browser interface.
+- `install_mac.py` and `install.command`: optional Mac desktop launcher setup.
+- `demo-vault/`: synthetic notes for safe exploration.
+- `test_app.py`: file, path and HTTP contract tests.
+
 ## 诚实的能力边界
 
 这是“收集、落盘、关键词找回”的工具，不是会自主判断一切的第二大脑。
@@ -78,11 +103,9 @@ X 帖子、群聊：复制选中的相关正文，尽量附来源。程序不登
 
 ## 已验证 / 未验证
 
-构建环境：Python 3，临时模拟库；测试夹具不是用户真实资料。
+在 Mac 上运行 64 个 Python 单元及 HTTP 测试，全部通过；`--check` 对仓库内合成库返回 `writes: 0`。Chrome 打开本机界面后，搜索 `Synthetic` 返回两篇合成笔记。测试夹具不是用户真实资料。
 
-JavaScript 语法检查通过。浏览器交互测试被当前运行环境对本机网址的策略阻止（ERR_BLOCKED_BY_ADMINISTRATOR），未完成；没有绕过或修改该策略。详见 BROWSER_TEST_RESULTS.json，须由本机 Codex 补做。
-
-没有访问用户的 Mac；桌面 AppleScript 应用构建、系统授权、浏览器唤起和 Obsidian 跳转尚需本机验证。不得把这些写成已经完成。
+这些检查没有验证桌面安装入口、Obsidian URI 跳转、系统授权或真实个人库兼容性；不能把它们写成已经完成。
 
 ## Demo Vault
 
