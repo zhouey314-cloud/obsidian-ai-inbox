@@ -93,7 +93,7 @@ class Vault:
                              and not (Path(parent) / d).is_symlink())
             for name in sorted(names):
                 path = Path(parent) / name
-                if name.lower().endswith('.md') and not path.is_symlink() and path.is_file():
+                if not name.startswith('.') and name.lower().endswith('.md') and not path.is_symlink() and path.is_file():
                     yield path
 
     def read_note(self, path: Path) -> str | None:
@@ -146,7 +146,7 @@ class Vault:
         results = []
         for folder in (self.raw, self.drafts):
             for path in folder.glob('*.md'):
-                if path.is_symlink() or not path.is_file():
+                if path.name.startswith('.') or path.is_symlink() or not path.is_file():
                     continue
                 content = self.read_note(path)
                 if content and 'capture_tool: obsidian-local-capture-v1' in content[:4096]:
@@ -216,7 +216,7 @@ class Vault:
 
     def _save(self, folder, kind, text, title, source, attachments, digest):
         for existing in folder.glob('*.md'):
-            if existing.is_symlink() or not existing.is_file():
+            if existing.name.startswith('.') or existing.is_symlink() or not existing.is_file():
                 continue
             body = self.read_note(existing)
             if body and f'capture_sha256: {digest}\n' in body[:4096] and self.complete_note(body):
