@@ -175,6 +175,27 @@ class CaptureTests(unittest.TestCase):
     def test_28_nonexistent_search_returns_empty(self):
         self.assertEqual(self.vault.search('不存在的唯一词庚辛壬')['results'],[])
 
+    def test_29_hidden_markdown_files_are_not_searched(self):
+        for relative in ('.private.md', '00 Inbox/raw/.private.md'):
+            (self.root / relative).write_text('SYNTHETIC_HIDDEN_NOTE', encoding='utf-8')
+        self.assertEqual(self.vault.search('SYNTHETIC_HIDDEN_NOTE')['results'], [])
+
+    def test_30_hidden_capture_is_not_listed_as_recent(self):
+        captured = Path(self.vault.capture({'text': 'SYNTHETIC_HIDDEN_CAPTURE'})['path'])
+        captured.rename(captured.with_name('.' + captured.name))
+        self.assertEqual(self.vault.recent()['results'], [])
+
+    def test_31_hidden_capture_is_not_reused_for_deduplication(self):
+        data = {'text': 'SYNTHETIC_HIDDEN_CAPTURE'}
+        captured = Path(self.vault.capture(data)['path'])
+        hidden = captured.with_name('.' + captured.name)
+        captured.rename(hidden)
+        original = hidden.read_bytes()
+        result = self.vault.capture(data)
+        self.assertFalse(result['duplicate'])
+        self.assertNotEqual(Path(result['path']), hidden)
+        self.assertEqual(hidden.read_bytes(), original)
+
 class HTTPTests(CaptureTests):
     # Keep only HTTP tests in this class rather than rerunning inherited capture tests.
     def setUp(self):
