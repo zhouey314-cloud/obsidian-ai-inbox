@@ -154,7 +154,7 @@ class Vault:
         results.sort(key=lambda x: x[0], reverse=True)
         return {'results': [item for _, item in results[:20]]}
 
-    def capture(self, data: dict) -> dict:
+    def capture(self, data: dict, *, import_metadata: dict | None = None) -> dict:
         if not isinstance(data, dict):
             raise CaptureError('保存内容必须是对象。')
         kind = text_field(data, 'kind', 200) or '资料'
@@ -189,6 +189,9 @@ class Vault:
         digest_input = {'kind': kind, 'text': text, 'source': source,
                         'files': sorted((a['name'], a['hash']) for a in attachments)}
         digest = sha(json.dumps(digest_input, sort_keys=True, ensure_ascii=False).encode('utf-8'))
+        # Only the offline importer supplies this keyword; HTTP input cannot set it.
+        if import_metadata is not None:
+            digest = self.import_digest(import_metadata['source_type'], text)
         folder = self.drafts if kind == '我的X草稿' else self.raw
         # Validate write destinations again immediately before writing.
         self.checked_dir(folder.relative_to(self.root).as_posix())
@@ -201,7 +204,7 @@ class Vault:
             fd = os.open(lockname, flags, 0o600)
             try:
                 fcntl.flock(fd, fcntl.LOCK_EX)
-                return self._save(folder, kind, text, title, source, attachments, digest)
+                return self._save(folder, kind, text, title, source, attachments, digest, import_metadata)
             finally:
                 os.close(fd)
 
@@ -214,14 +217,26 @@ class Vault:
         expected = trailer.strip().removesuffix('-->').strip()
         return len(expected) == 64 and sha(prefix.encode('utf-8')) == expected
 
-    def _save(self, folder, kind, text, title, source, attachments, digest):
+    @staticmethod
+    def import_digest(source_type: str, text: str) -> str:
+        # Stable across renames, export timestamps and record IDs. No lossy normalization.
+        return sha(json.dumps(['offline-import-v1', source_type, sha(text.encode('utf-8'))],
+                              ensure_ascii=False).encode('utf-8'))
+
+    def find_capture(self, folder: Path, digest: str):
         for existing in folder.glob('*.md'):
             if existing.name.startswith('.') or existing.is_symlink() or not existing.is_file():
                 continue
             body = self.read_note(existing)
             if body and f'capture_sha256: {digest}\n' in body[:4096] and self.complete_note(body):
-                return self.public_note(existing, ok=True, duplicate=True,
-                                        status='已保存过；没有重复创建', pending=[])
+                return existing
+        return None
+
+    def _save(self, folder, kind, text, title, source, attachments, digest, import_metadata=None):
+        existing = self.find_capture(folder, digest)
+        if existing is not None:
+            return self.public_note(existing, ok=True, duplicate=True,
+                                    status='已保存过；没有重复创建', pending=[])
         saved_attachments, pending = [], []
         extracted_total = 0
         for item in attachments:
@@ -266,8 +281,12 @@ class Vault:
                  f'capture_sha256: {digest}', 'title: ' + json.dumps(title, ensure_ascii=False),
                  'created: ' + json.dumps(created), 'source_kind: ' + json.dumps(kind, ensure_ascii=False),
                  'source: ' + json.dumps(source or '未提供', ensure_ascii=False),
-                 f'status: {status}', 'ai_processed: false', '---', '', f'# {title}', '',
-                 '> 由本地收集入口保存。正文为用户提供的材料，不代表已核实；未调用 AI 整理。', '']
+                 f'status: {status}', 'ai_processed: false']
+        if import_metadata is not None:
+            # JSON is a YAML scalar subset. Keep source times separate from capture time.
+            front.append('import_metadata: ' + json.dumps(import_metadata, ensure_ascii=False))
+        front.extend(['---', '', f'# {title}', '',
+                      '> 由本地收集入口保存。正文为用户提供的材料，不代表已核实；未调用 AI 整理。', ''])
         if source:
             front.extend(['## 来源说明', source, ''])
         if text:
@@ -446,3 +465,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+

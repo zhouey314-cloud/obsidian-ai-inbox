@@ -35,6 +35,14 @@ sync service.
 - 找：同一页面点“找以前的资料”，输入关键词，打开匹配到的实际笔记。
 - 用：保存结果里点“复制给 Codex 的整理指令”，粘贴给本机 Codex。先针对这一份资料提炼，不再次全库整理。
 
+## 离线批量导入已有文本
+
+已有 Markdown、TXT 或符合明确约定的 JSON，可使用新增的 `batch_import.py` 一次导入多份，
+先生成库外预览清单，再明确执行。支持来源/时间保留、内容哈希去重、增量重试、错误隔离和逐项 JSONL 报告，
+复用现有保存逻辑，只向 `00 Inbox/raw/` 追加笔记。[完整命令、JSON 约定及恢复说明](docs/batch-import.md)。
+目录默认只读第一层，递归须显式添加 `--recursive`。这是本机命令行入口，现有浏览器的 12 文件限制不变。
+不自动下载账号历史，也不把通用 JSON 导入约定称为 ChatGPT / Codex 全量迁移适配器。
+
 ## 每种材料怎么放
 
 X 帖子、群聊：复制选中的相关正文，尽量附来源。程序不登录 X、不抓取微信、不读取整个剪贴板。只有链接时会明确标记“没有获取网页正文”。
@@ -64,10 +72,12 @@ X 帖子、群聊：复制选中的相关正文，尽量附来源。程序不登
 Selected vault path → loopback server with a per-run token → capture into known vault folders or search readable Markdown → human review. The tool can copy an instruction for Codex about one saved item; it does not call a model itself.
 
 - `app.py`: vault boundary, capture/search logic and loopback HTTP server.
+- `batch_import.py`: offline preview/apply CLI, explicit text/JSON validation and per-item import reports.
 - `index.html`: local browser interface.
 - `install_mac.py` and `install.command`: optional Mac desktop launcher setup.
 - `demo-vault/`: synthetic notes for safe exploration.
 - `test_app.py`: file, path and HTTP contract tests.
+- `test_batch_import.py`: synthetic batch, incremental, provenance and failure-recovery tests.
 
 ## 诚实的能力边界
 
@@ -81,7 +91,8 @@ Selected vault path → loopback server with a per-run token → capture into kn
 
 ## 限制及异常情况
 
-每次最多 12 个文件，单文件 25MB、合计 50MB；正文上限 2MB。大录音应交给本机 Codex 按路径处理，不要塞进此窗口。
+浏览器收件窗口每次最多 12 个文件，单文件 25MB、合计 50MB；正文上限 2MB。大录音应交给本机 Codex 按路径处理，不要塞进此窗口。
+离线批量命令每批最多 1000 个文件、10000 条记录；单源文件 25MB，每条原文 2MB，详见批量导入说明。
 
 文本附件提取上限：单文件 2MB，合计提取结果 2MB；原文件仍完整保存。优先 UTF-8，兼容能正确解码的 UTF-16、GB18030；不能可靠解码就标记未提取，不编造内容。
 
@@ -128,3 +139,4 @@ https://obsidian.md/help/Extending%2BObsidian/Obsidian%2BURI
 ## License
 
 MIT. See [LICENSE](LICENSE).
+
