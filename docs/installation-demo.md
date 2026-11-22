@@ -1,11 +1,33 @@
 # Installation and search demo
 
-1. Run `python3 app.py --vault demo-vault --check` to verify the bundled synthetic vault without writes.
-2. Run `python3 app.py --vault demo-vault` to open the local UI.
-3. Select “找以前的资料” and search for a keyword from the synthetic notes in `demo-vault/`.
-4. The result links to a local Markdown file; no cloud index or semantic model is used.
+Try the local capture-and-search tool with the bundled fictional notes
+before pointing it at any personal data. This walkthrough needs Python 3.9+
+and no API key, plugin install, or real vault.
 
-The README screenshot was captured from the running local UI with the bundled
-synthetic vault selected. In a browser check, searching `Synthetic` returned
-the two fixture notes. This does not verify a desktop installation or a private
-vault.
+## Check the example vault without writing
+
+From the repository root:
+
+```sh
+python3 app.py --vault demo-vault --check
+```
+
+Look for `ok: true` and `writes: 0` in the JSON output. This checks the
+selected path without a live capture or a desktop launcher installation.
+
+## Find the bundled notes
+
+1. Run `python3 app.py --vault demo-vault` to open the local UI; it binds
+   to loopback only.
+2. Choose **找以前的资料** and search for `Synthetic`. Expect the two
+   bundled example notes. Open a result to inspect its local Markdown link.
+3. Use the page's **关闭入口** control to stop the running demo. The
+   search exercise does not require saving a note or touching an actual vault.
+
+The README screenshot shows this synthetic vault in the running local UI.
+The two-result browser check does not verify launcher installation, Obsidian
+URI behavior, personal vault compatibility, or sync. This tool does not
+upload notes itself; a vault's Obsidian Sync, iCloud, or other separate
+synchronization settings are outside the tool.
+
+[Verification scope](verification.md) · [Fixed CI snapshot (`cee3520`)](https://github.com/zhouey314-cloud/obsidian-ai-inbox/actions/runs/39590884846) · [Back to README](../README.md)
